@@ -85,11 +85,15 @@
         CGRect frame = card.frame;
         frame.origin.y = 0 - frame.size.height;
         card.frame = frame;
-        [self.cardViewArrayM removeObjectAtIndex:0];
+        [self.cardViewArrayM removeObject:card];
         [self resetSubCardView];
     }completion:^(BOOL finished) {
-        [card removeFromSuperview];
         [self.cards removeObjectAtIndex:0];
+        if (self.cards.count >= self.cardViewArrayM.count) {
+            [self insertSubview:card atIndex:0];
+            [self.cardViewArrayM addObject:card];
+        }
+        [self resetSubCardView];
         if (self.cards.count == 1) {
             [self removeGestureRecognizer:self.gestureRecognizers.lastObject];
         }
