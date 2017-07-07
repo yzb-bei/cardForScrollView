@@ -58,7 +58,7 @@
             }];
         }else{
             [UIView animateWithDuration:0.4f delay:0 usingSpringWithDamping:0.8 initialSpringVelocity:1.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                card.center = self.centerPoint;
+                card.center = _centerPoint;
             } completion:nil];
         }
     }
@@ -66,11 +66,9 @@
 
 #pragma mark private
 - (void)resetSubCardView {
-    if (_cardViewArrayM.count > 1) {
-        for (int i = 0; i < _cardViewArrayM.count; i++) {
-            CardView *card = _cardViewArrayM[i];
-            [self setCarView:card Index:i];
-        }
+    for (int i = 0; i < _cardViewArrayM.count; i++) {
+        CardView *card = _cardViewArrayM[i];
+        [self setCarView:card Index:i];
     }
 }
 
@@ -85,16 +83,18 @@
         CGRect frame = card.frame;
         frame.origin.y = 0 - frame.size.height;
         card.frame = frame;
-        [self.cardViewArrayM removeObject:card];
+        [_cardViewArrayM removeObject:card];
         [self resetSubCardView];
     }completion:^(BOOL finished) {
-        [self.cards removeObjectAtIndex:0];
-        if (self.cards.count >= self.cardViewArrayM.count) {
+        [card removeFromSuperview];
+        [_cards removeObjectAtIndex:0];
+        if (_cards.count > _cardViewArrayM.count) {
             [self insertSubview:card atIndex:0];
+            card.center = _centerPoint;
             [self.cardViewArrayM addObject:card];
         }
         [self resetSubCardView];
-        if (self.cards.count == 1) {
+        if (_cards.count == 1) {
             [self removeGestureRecognizer:self.gestureRecognizers.lastObject];
         }
     } ];
@@ -118,9 +118,11 @@
         [self insertSubview:cardView atIndex:0];
         [self setCarView:cardView Index:i];
         if (0 == i) {
-            self.centerPoint = cardView.center;
+            _centerPoint = cardView.center;
         }
         [self.cardViewArrayM addObject:cardView];
+        
+        self.centerPoint = cardView.center;
     }
 }
 
