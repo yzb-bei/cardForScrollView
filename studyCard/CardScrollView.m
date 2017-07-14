@@ -19,11 +19,12 @@
 
 @interface CardScrollView ()
 @property (nonatomic, strong) NSMutableArray *cards;
-@property (nonatomic, strong) NSMutableArray *cardViewArrayM;
+@property (nonatomic, strong) NSMutableArray<CardView *> *cardViewArrayM;
 @property (nonatomic, assign) NSInteger itemCount;
 @property (nonatomic, assign) NSInteger lastItemIndex;
 
 @property (nonatomic, assign) CGPoint centerPoint;
+@property (nonatomic, assign) CGPoint panPoint;
 @end
 
 @implementation CardScrollView
@@ -40,19 +41,19 @@
 #pragma mark - Event
 - (void)moveCardGesture:(UIPanGestureRecognizer *)pan {
     if (pan.state == UIGestureRecognizerStateBegan) {
-        
-        
+        CGPoint offset = [pan locationInView:_cardViewArrayM[0]];
+        self.panPoint = offset;
     }else if (pan.state == UIGestureRecognizerStateChanged) {
-        CGPoint offset = [pan translationInView:self];
+        CGPoint offset = [pan locationInView:_cardViewArrayM[0]];
         UIView *card = _cardViewArrayM[0];
-        card.center = CGPointMake(card.center.x, card.center.y+offset.y);
-        [pan setTranslation:CGPointMake(0, 0) inView:self];
+        [UIView animateWithDuration:0.15 animations:^{
+            card.center = CGPointMake(card.center.x, card.center.y + offset.y - self.panPoint.y);
+        }];
     }else if (pan.state == UIGestureRecognizerStateEnded) {
-        UIView *card = _cardViewArrayM[0];
+        self.panPoint = CGPointZero;
+        CardView *card = _cardViewArrayM[0];
         CGPoint cardPoint = card.center;
         if (abs((int)self.center.y) - abs((int)cardPoint.y) > card.bounds.size.height/3.0f) {
-            //去第一个去掉，
-            //整顿后面的View
             [UIView animateWithDuration:0.25 animations:^{
                 [self removeCurrentCardView:card];
             }];
@@ -78,51 +79,64 @@
     card.transform = kMakeTranslateY(card, (index * kCardMargin)/scale);
 }
 
-- (void)removeCurrentCardView:(UIView *) card{
-    [UIView animateWithDuration:0.25 animations:^{
-        CGRect frame = card.frame;
-        frame.origin.y = 0 - frame.size.height;
-        card.frame = frame;
-        [_cardViewArrayM removeObject:card];
-        [self resetSubCardView];
-    }completion:^(BOOL finished) {
-        [card removeFromSuperview];
-        [_cards removeObjectAtIndex:0];
-        if (_cards.count > _cardViewArrayM.count) {
-            [self insertSubview:card atIndex:0];
-            card.center = _centerPoint;
-            [self.cardViewArrayM addObject:card];
-        }
-        [self resetSubCardView];
-        if (_cards.count == 1) {
-            [self removeGestureRecognizer:self.gestureRecognizers.lastObject];
-        }
-    } ];
-    
-}
-
-#pragma set / get
-- (void)setCards:(NSMutableArray *)cards {
-    _cards = cards;
-    NSInteger count = _cards.count > kCardMaxCount ? kCardMaxCount : cards.count;
-    _itemCount = count;
-    
+- (void)cardsLayout:(UIView *) cardView andIndex:(NSInteger) index{
     CGFloat h = (self.bounds.size.height - kVerticalMargin * 2.0f);
     CGFloat w = (self.bounds.size.width - kHorizontalMargin * 2.0f);
     CGFloat x = (self.bounds.size.width - w)/2.0f;
     CGFloat y = (self.bounds.size.height - h)/2.0f;
     
-    for (int i = 0; i < count; i++) {
+    cardView.frame = CGRectMake(x, y, w, h);
+    [self setCarView:cardView Index:index];
+}
+
+- (void)removeCurrentCardView:(CardView *) card{
+    [UIView animateWithDuration:0.25 animations:^{
+        CGRect frame = card.frame;
+        frame.origin.y = 0 - frame.size.height;
+        card.frame = frame;
+        [_cardViewArrayM removeObject:card];
+        self.lastItemIndex++;
+        [self resetSubCardView];
+    }completion:^(BOOL finished) {
+        [card removeFromSuperview];
+        [self insertSubview:card atIndex:0];
+        card.center = _centerPoint;
+        [self.cardViewArrayM addObject:card];
+        [self resetSubCardView];
+        if (_cards.count == 1) {
+            [self removeGestureRecognizer:self.gestureRecognizers.lastObject];
+        }
+    } ];
+}
+
+- (void)removeAllCardsObjects {
+    for (UIView *cardView in self.cardViewArrayM) {
+        [cardView removeFromSuperview];
+    }
+    [self.cardViewArrayM removeAllObjects];
+}
+
+#pragma set / get
+- (void)setCardView:(CardView *) cardView Model:(id) model {
+        [cardView.label setText:model];
+}
+
+- (void)setCards:(NSMutableArray *)cards {
+    _cards = cards;
+    [self removeAllCardsObjects];
+    NSInteger count = _cards.count > kCardMaxCount ? kCardMaxCount : cards.count;
+    _itemCount = count;
+    _lastItemIndex = 0;
+    for (int i = 0; i < _itemCount; i++) {
         CardView *cardView = [CardView new];
-        cardView.frame = CGRectMake( x, y, w, h);
+        [self setCardView:cardView Model:_cards[i]];
         [self insertSubview:cardView atIndex:0];
-        [self setCarView:cardView Index:i];
+        [self cardsLayout:cardView andIndex:i];
+        [self.cardViewArrayM addObject:cardView];
         if (0 == i) {
             _centerPoint = cardView.center;
         }
-        [self.cardViewArrayM addObject:cardView];
         
-        self.centerPoint = cardView.center;
     }
 }
 
