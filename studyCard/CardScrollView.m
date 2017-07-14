@@ -53,7 +53,7 @@
         self.panPoint = CGPointZero;
         CardView *card = _cardViewArrayM[0];
         CGPoint cardPoint = card.center;
-        if (abs((int)self.center.y) - abs((int)cardPoint.y) > card.bounds.size.height/3.0f) {
+        if (abs((int)cardPoint.y - abs((int)self.center.y)) > card.bounds.size.height/3.0f) {
             [UIView animateWithDuration:0.25 animations:^{
                 [self removeCurrentCardView:card];
             }];
